@@ -10,29 +10,35 @@ connectDB();
 
 const app = express();
 
-app.use(cors({
-  origin: function(origin, callback) {
-    const allowedOrigins = [
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowed = [
       'https://civic-reporting-system-two.vercel.app',
       'http://localhost:5173',
       'http://localhost:5174',
     ];
-    if (!origin || allowedOrigins.includes(origin)) {
+
+    console.log(`[CORS] Incoming Origin: ${origin}`);
+
+    if (!origin || allowed.includes(origin) || (origin && origin.endsWith('.vercel.app'))) {
       callback(null, true);
     } else {
+      console.error(`[CORS REJECTED] Origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie'],
+};
 
-// Handle preflight requests explicitly
-app.options('*', cors());
+// Apply CORS to all routes including preflight OPTIONS
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
 
 app.use('/api/v1/auth', require('./routes/auth.routes'));
 app.use('/api/v1/complaints', require('./routes/complaint.routes'));
