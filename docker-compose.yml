@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  ml-service:
+    build: ./ml-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  server:
+    build: ./server
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - CLIENT_URL=http://localhost:5174
+      - ML_SERVICE_URL=http://ml-service:8000
+    depends_on:
+      - ml-service
+
+  client:
+    build: ./client
+    ports:
+      - "5174:80"
+    depends_on:
+      - server
