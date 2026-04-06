@@ -24,10 +24,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-        with:
-          args: >
-            -Dsonar.projectKey=Civic_reporting_system
-            -Dsonar.organization=kapale-krishna-shivaji
 
   # ─────────────────────────────────────────
   # JOB 2 — Trivy Security Vulnerability Scan
