@@ -9,33 +9,36 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const redirectMap = {
+    citizen: '/dashboard',
+    officer: '/staff/dashboard',
+    wardOfficer: '/ward-officer/dashboard',
+    deptAdmin: '/dept-admin/dashboard',
+    cityAdmin: '/city-admin/dashboard',
+    stateAdmin: '/state-admin/dashboard',
+    superAdmin: '/admin/dashboard',
+  };
+
   useEffect(() => {
-    if (user) {
-      const redirectMap = {
-        citizen: '/dashboard',
-        officer: '/staff/dashboard',
-        deptAdmin: '/dept-admin/dashboard',
-        superAdmin: '/admin/dashboard',
-      };
-      navigate(redirectMap[user.role] || '/dashboard');
-    }
+    if (user) navigate(redirectMap[user.role] || '/dashboard');
   }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    
+    // Trim accidental spaces
+    const trimmedEmail = form.email.trim();
+    const trimmedPassword = form.password.trim();
+
     try {
-      const loggedUser = await login(form.email, form.password);
-      const redirectMap = {
-        citizen: '/dashboard',
-        officer: '/staff/dashboard',
-        deptAdmin: '/dept-admin/dashboard',
-        superAdmin: '/admin/dashboard',
-      };
+      const loggedUser = await login(trimmedEmail, trimmedPassword);
       navigate(redirectMap[loggedUser.role] || '/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      console.error('Login Error:', err.response?.data);
+      const serverMessage = err.response?.data?.message;
+      setError(serverMessage || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -50,7 +53,7 @@ const LoginPage = () => {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm text-center font-medium animate-pulse">
             {error}
           </div>
         )}
@@ -91,8 +94,11 @@ const LoginPage = () => {
           Don't have an account?{' '}
           <Link to="/register" className="text-blue-600 font-medium hover:underline">Register</Link>
         </p>
+        <p className="text-center text-sm mt-2">
+          <Link to="/forgot-password" className="text-blue-500 hover:underline">Forgot password?</Link>
+        </p>
         <p className="text-center mt-2">
-          <Link to="/" className="text-xs text-gray-400 hover:underline">Back to map</Link>
+          <Link to="/" className="text-xs text-gray-400 hover:underline">Back to home</Link>
         </p>
       </div>
     </div>

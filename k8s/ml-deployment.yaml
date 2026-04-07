@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civic-ml
+  labels:
+    app: civic-ml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: civic-ml
+  template:
+    metadata:
+      labels:
+        app: civic-ml
+    spec:
+      containers:
+        - name: civic-ml
+          image: krishnakapale/civic-ml:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: FLASK_ENV
+              value: "production"
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10

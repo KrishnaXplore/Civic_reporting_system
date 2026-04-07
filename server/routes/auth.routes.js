@@ -1,94 +1,73 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const multer = require('multer');
+const { body } = require('express-validator');
 const { protect } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
+const asyncHandler = require('../utils/asyncHandler');
+const validate = require('../utils/validate');
+const authController = require('../controllers/auth.controller');
 
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
-  });
-};
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
-const sendTokenResponse = (user, statusCode, res) => {
-  const token = signToken(user._id);
-  const isProduction = process.env.NODE_ENV === 'production';
+router.post(
+  '/register',
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('phone').notEmpty().withMessage('Phone is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  validate,
+  asyncHandler(authController.register)
+);
 
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-  const userObj = user.toObject();
-  delete userObj.password;
-  res.status(statusCode).json({ success: true, user: userObj });
-};
+router.post(
+  '/login',
+  authLimiter,
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('password').notEmpty().withMessage('Password is required'),
+  ],
+  validate,
+  asyncHandler(authController.login)
+);
 
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, phone, password, locality } = req.body;
+router.post('/logout', authController.logout);
 
-    if (!name || !email || !phone || !password) {
-      return res.status(400).json({ success: false, message: 'Please fill all required fields' });
-    }
+router.get('/me', protect, asyncHandler(authController.getMe));
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'Email already registered' });
-    }
+router.put(
+  '/profile',
+  protect,
+  [body('name').optional().trim().notEmpty().withMessage('Name cannot be empty')],
+  validate,
+  asyncHandler(authController.updateProfile)
+);
 
-    const user = await User.create({ name, email, phone, password, locality });
-    sendTokenResponse(user, 201, res);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.post(
+  '/upload-photo',
+  protect,
+  upload.single('photo'),
+  asyncHandler(authController.uploadPhoto)
+);
 
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+router.post(
+  '/forgot-password',
+  [body('email').isEmail().withMessage('Valid email is required')],
+  validate,
+  asyncHandler(authController.forgotPassword)
+);
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
-    }
-
-    const user = await User.findOne({ email }).select('+password').populate('department');
-    if (!user || !(await user.matchPassword(password))) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
-    }
-
-    if (user.status === 'banned') {
-      return res.status(403).json({ success: false, message: 'Your account has been banned' });
-    }
-
-    sendTokenResponse(user, 200, res);
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-router.post('/logout', (req, res) => {
-  res.cookie('token', '', { expires: new Date(0), httpOnly: true });
-  res.status(200).json({ success: true, message: 'Logged out successfully' });
-});
-
-router.get('/me', protect, async (req, res) => {
-  res.status(200).json({ success: true, user: req.user });
-});
-
-router.put('/profile', protect, async (req, res) => {
-  try {
-    const { name, phone, locality, profilePhoto } = req.body;
-    const updated = await User.findByIdAndUpdate(
-      req.user._id,
-      { name, phone, locality, profilePhoto },
-      { new: true, runValidators: true }
-    );
-    res.status(200).json({ success: true, user: updated });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.post(
+  '/reset-password',
+  [
+    body('token').notEmpty().withMessage('Token is required'),
+    body('userId').notEmpty().withMessage('User ID is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  validate,
+  asyncHandler(authController.resetPassword)
+);
 
 module.exports = router;

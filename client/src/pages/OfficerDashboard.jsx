@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import ResolveModal from '../components/officer/ResolveModal';
 
 const statusStyles = {
   Submitted: 'bg-gray-100 text-gray-700',
@@ -17,10 +18,7 @@ const OfficerDashboard = () => {
   const [complaints, setComplaints] = useState([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
-  const [resolveModal, setResolveModal] = useState(null);
-  const [afterImage, setAfterImage] = useState(null);
-  const [fundsSpent, setFundsSpent] = useState('');
-  const [resolving, setResolving] = useState(false);
+  const [resolveId, setResolveId] = useState(null);
 
   const fetchComplaints = () => {
     const params = filter ? `?status=${filter}` : '';
@@ -37,26 +35,10 @@ const OfficerDashboard = () => {
     fetchComplaints();
   };
 
-  const handleResolve = async () => {
-    if (!afterImage) return alert('Please upload an after image');
-    setResolving(true);
-    const fd = new FormData();
-    fd.append('afterImage', afterImage);
-    fd.append('fundsSpent', fundsSpent);
-    await api.put(`/api/v1/complaints/${resolveModal}/resolve`, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    setResolveModal(null);
-    setAfterImage(null);
-    setFundsSpent('');
-    setResolving(false);
-    fetchComplaints();
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow px-6 py-3 flex items-center justify-between">
-        <span className="text-xl font-bold text-blue-600">CivicConnect — Officer</span>
+        <Link to="/" className="text-xl font-bold text-blue-600 hover:opacity-80 transition">CivicConnect — Officer</Link>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">{user?.name} · {user?.department?.name}</span>
           <button onClick={async () => { await logout(); navigate('/login'); }} className="text-sm text-red-500">Logout</button>
@@ -104,7 +86,7 @@ const OfficerDashboard = () => {
                         <button onClick={() => updateStatus(c._id, 'InProgress')} className="text-xs px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600">Start</button>
                       )}
                       {c.status === 'InProgress' && (
-                        <button onClick={() => setResolveModal(c._id)} className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700">Resolve</button>
+                        <button onClick={() => setResolveId(c._id)} className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700">Resolve</button>
                       )}
                     </div>
                   </div>
@@ -115,32 +97,12 @@ const OfficerDashboard = () => {
         )}
       </div>
 
-      {/* Resolve modal */}
-      {resolveModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-base font-semibold text-gray-800 mb-4">Resolve Complaint</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">After Image</label>
-                <input type="file" accept="image/*" onChange={(e) => setAfterImage(e.target.files[0])}
-                  className="w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-600" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Funds Spent (₹)</label>
-                <input type="number" value={fundsSpent} onChange={(e) => setFundsSpent(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0" />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setResolveModal(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={handleResolve} disabled={resolving} className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-60">
-                {resolving ? 'Resolving...' : 'Confirm Resolved'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {resolveId && (
+        <ResolveModal
+          complaintId={resolveId}
+          onClose={() => setResolveId(null)}
+          onResolved={fetchComplaints}
+        />
       )}
     </div>
   );

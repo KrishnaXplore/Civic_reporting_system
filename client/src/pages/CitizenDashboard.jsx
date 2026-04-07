@@ -40,7 +40,7 @@ const CitizenDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow px-6 py-3 flex items-center justify-between">
-        <span className="text-xl font-bold text-blue-600">CivicConnect</span>
+        <Link to="/" className="text-xl font-bold text-blue-600 hover:opacity-80 transition">CivicConnect</Link>
         <div className="flex items-center gap-4">
           <Link to="/profile" className="text-sm text-gray-600 hover:text-blue-600">Profile</Link>
           <button onClick={handleLogout} className="text-sm text-red-500 hover:text-red-700">Logout</button>

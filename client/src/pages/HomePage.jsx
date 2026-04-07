@@ -1,72 +1,158 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
-import api from '../api/axios';
-import 'leaflet/dist/leaflet.css';
+import Navbar from '../components/common/Navbar';
+import { getStatsApi } from '../api/admin.api';
+import { useAuth } from '../context/AuthContext';
+import { getDashboardRoute } from '../utils/helpers';
 
-const statusColor = {
-  Submitted: '#EF4444',
-  Assigned: '#3B82F6',
-  InProgress: '#F97316',
-  Resolved: '#22C55E',
-};
+const FEATURES = [
+  { icon: '📍', title: 'Report Issues', desc: 'Submit civic complaints with photos and GPS location in seconds.' },
+  { icon: '🤖', title: 'AI Verification', desc: 'AI detects fake images and duplicate complaints automatically.' },
+  { icon: '🔔', title: 'Live Updates', desc: 'Get real-time notifications as your complaint moves through resolution.' },
+  { icon: '🗺️', title: 'Live Map', desc: 'See all active complaints in your city plotted on an interactive map.' },
+  { icon: '📊', title: 'Transparency', desc: 'Public dashboard shows resolution rates, funds spent, and department stats.' },
+  { icon: '🛡️', title: 'Trust System', desc: 'Citizen trust scores reward honest reporting and discourage abuse.' },
+];
 
 const HomePage = () => {
-  const [complaints, setComplaints] = useState([]);
+  const [stats, setStats] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    api.get('/api/v1/complaints/map')
-      .then(({ data }) => setComplaints(data.data))
+    getStatsApi()
+      .then(({ data }) => setStats(data.data))
       .catch(() => {});
   }, []);
 
   return (
-    <div className="h-screen flex flex-col">
-      <nav className="bg-white shadow z-10 flex items-center justify-between px-6 py-3">
-        <span className="text-xl font-bold text-blue-600">CivicConnect</span>
-        <div className="flex gap-3">
-          <Link to="/login" className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Login</Link>
-          <Link to="/register" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">Register</Link>
-        </div>
-      </nav>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#F8FAFC' }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet" />
 
-      <div className="flex-1 relative">
-        <MapContainer center={[20.5937, 78.9629]} zoom={5} className="h-full w-full">
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {complaints.map((c) => (
-            <CircleMarker
-              key={c._id}
-              center={[c.location.coordinates[1], c.location.coordinates[0]]}
-              radius={8}
-              fillColor={statusColor[c.status] || '#888'}
-              color="#fff"
-              weight={2}
-              fillOpacity={0.9}
-            >
-              <Popup>
-                <div className="text-sm">
-                  <p className="font-semibold">{c.title}</p>
-                  <p className="text-gray-500">{c.category}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs text-white"
-                    style={{ backgroundColor: statusColor[c.status] }}>
-                    {c.status}
-                  </span>
+      {/* Hero */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #1D4ED8 100%)',
+        minHeight: '100vh', position: 'relative', overflow: 'hidden',
+      }}>
+        <Navbar transparent />
+        <div style={{
+          position: 'absolute', inset: 0, opacity: 0.04,
+          backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+          backgroundSize: '32px 32px',
+        }} />
+
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '120px 32px 100px', position: 'relative', zIndex: 1, textAlign: 'center' }}>
+          <div style={{ display: 'inline-block', background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 20, padding: '5px 16px', marginBottom: 24, fontSize: 12, fontWeight: 600, color: '#93C5FD', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Civic Tech for India
+          </div>
+          <h1 style={{ fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 800, color: '#F8FAFC', lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: 24 }}>
+            Report. Track. Resolve.
+          </h1>
+          <p style={{ fontSize: 18, color: '#94A3B8', maxWidth: 560, margin: '0 auto 40px', lineHeight: 1.7 }}>
+            CivicConnect bridges citizens and government. Report local issues, track resolution in real time, and hold departments accountable.
+          </p>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {user ? (
+              <Link to={getDashboardRoute(user.role)} style={{
+                padding: '14px 32px', background: '#3B82F6', color: '#fff', borderRadius: 12,
+                textDecoration: 'none', fontWeight: 700, fontSize: 15, letterSpacing: '-0.2px',
+              }}>
+                Go to Dashboard
+              </Link>
+            ) : (
+              <Link to="/register" style={{
+                padding: '14px 32px', background: '#3B82F6', color: '#fff', borderRadius: 12,
+                textDecoration: 'none', fontWeight: 700, fontSize: 15, letterSpacing: '-0.2px',
+              }}>
+                Get Started Free
+              </Link>
+            )}
+            <Link to="/map" style={{
+              padding: '14px 32px', background: 'rgba(255,255,255,0.1)', color: '#E2E8F0',
+              borderRadius: 12, textDecoration: 'none', fontWeight: 600, fontSize: 15,
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}>
+              View Live Map
+            </Link>
+          </div>
+
+          {/* Live stats */}
+          {stats && (
+            <div style={{ display: 'flex', gap: 32, justifyContent: 'center', marginTop: 64, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Complaints Filed', value: stats.totalComplaints?.toLocaleString() },
+                { label: 'Resolved', value: stats.resolved?.toLocaleString() },
+                { label: 'Citizens', value: stats.totalCitizens?.toLocaleString() },
+                { label: 'Funds Tracked', value: `₹${(stats.totalFunds || 0).toLocaleString()}` },
+              ].map((s) => (
+                <div key={s.label} style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 32, fontWeight: 800, color: '#F8FAFC', letterSpacing: '-1px', margin: 0 }}>{s.value}</p>
+                  <p style={{ fontSize: 12, color: '#64748B', margin: '4px 0 0', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</p>
                 </div>
-              </Popup>
-            </CircleMarker>
-          ))}
-        </MapContainer>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-        <div className="absolute bottom-6 left-6 bg-white rounded-xl shadow p-3 z-[1000]">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Legend</p>
-          {Object.entries(statusColor).map(([s, c]) => (
-            <div key={s} className="flex items-center gap-2 text-xs text-gray-700 mb-1">
-              <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: c }} />
-              {s}
+      {/* Features */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <h2 style={{ fontSize: 36, fontWeight: 800, color: '#0F172A', letterSpacing: '-1px', marginBottom: 12 }}>
+            Everything you need
+          </h2>
+          <p style={{ fontSize: 16, color: '#64748B', maxWidth: 480, margin: '0 auto' }}>
+            A full-stack civic platform built for transparency, accountability, and real impact.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+          {FEATURES.map((f) => (
+            <div key={f.title} style={{
+              background: '#fff', borderRadius: 16, padding: '28px 28px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #F1F5F9',
+              transition: 'box-shadow 0.2s',
+            }}>
+              <div style={{ fontSize: 32, marginBottom: 14 }}>{f.icon}</div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
             </div>
           ))}
         </div>
       </div>
+
+      {/* CTA */}
+      <div style={{ background: '#0F172A', padding: '80px 32px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 32, fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.8px', marginBottom: 12 }}>
+          Your city needs your voice
+        </h2>
+        <p style={{ fontSize: 15, color: '#64748B', marginBottom: 32, maxWidth: 440, margin: '0 auto 32px' }}>
+          Join thousands of citizens making their city better — one complaint at a time.
+        </p>
+        {user ? (
+          <Link to="/complaint/new" style={{
+            padding: '14px 36px', background: '#3B82F6', color: '#fff', borderRadius: 12,
+            textDecoration: 'none', fontWeight: 700, fontSize: 15,
+          }}>
+            Submit a Complaint
+          </Link>
+        ) : (
+          <Link to="/register" style={{
+            padding: '14px 36px', background: '#3B82F6', color: '#fff', borderRadius: 12,
+            textDecoration: 'none', fontWeight: 700, fontSize: 15,
+          }}>
+            Register Now
+          </Link>
+        )}
+      </div>
+
+      {/* Footer */}
+      <footer style={{ background: '#0F172A', borderTop: '1px solid #1E293B', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <p style={{ fontSize: 13, color: '#475569', margin: 0 }}>© 2025 CivicConnect. Built for transparent governance.</p>
+        <div style={{ display: 'flex', gap: 20 }}>
+          <Link to="/about" style={{ fontSize: 13, color: '#475569', textDecoration: 'none' }}>About</Link>
+          <Link to="/support" style={{ fontSize: 13, color: '#475569', textDecoration: 'none' }}>Support</Link>
+          <Link to="/map" style={{ fontSize: 13, color: '#475569', textDecoration: 'none' }}>Live Map</Link>
+        </div>
+      </footer>
     </div>
   );
 };

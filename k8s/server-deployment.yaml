@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civic-server
+  labels:
+    app: civic-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: civic-server
+  template:
+    metadata:
+      labels:
+        app: civic-server
+    spec:
+      containers:
+        - name: civic-server
+          image: krishnakapale/civic-server:latest
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - secretRef:
+                name: civic-secrets
+            - configMapRef:
+                name: civic-config
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 10
